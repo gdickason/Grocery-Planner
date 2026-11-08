@@ -150,9 +150,20 @@ details.how ol{margin:8px 0 0;padding-left:22px}
     });
     return Array.from(map.values());
   }
+  function listGroups(){
+    return pickedRecipes().map(function(r){
+      var seen = {};
+      var items = r.ingredients.map(function(l){ return l.trim(); }).filter(function(t){
+        var k = keyOf(t);
+        if(!t || seen[k] || have.indexOf(k) > -1) return false;
+        seen[k] = true; return true;
+      });
+      return {name:r.name, items:items};
+    }).filter(function(g){ return g.items.length; });
+  }
+  function listCount(){ return listGroups().reduce(function(n, g){ return n + g.items.length; }, 0); }
   function listText(){
-    return shoppingItems().filter(function(i){ return have.indexOf(i.key) < 0; })
-      .map(function(i){ return i.text + (i.meals.length > 1 ? ' (x' + i.meals.length + ')' : ''); }).join('\n');
+    return listGroups().map(function(g){ return g.name + '\n' + g.items.join('\n'); }).join('\n\n');
   }
 
   function buildDoc(){
@@ -259,7 +270,7 @@ details.how ol{margin:8px 0 0;padding-left:22px}
     var meals = pickedRecipes();
     if(!meals.length) return header() + '<div class="wrap"><main><h1>Shopping list</h1><div class="empty"><strong>No meals picked yet</strong>Tick 3 or 4 meals on the Recipes tab and their ingredients will show up here.<button class="btn primary" data-act="tab" data-to="recipes">Pick meals</button></div></main></div>';
     var items = shoppingItems();
-    var left = items.filter(function(i){ return have.indexOf(i.key) < 0; }).length;
+    var left = listCount();
     return header() + '<div class="wrap"><main>'
       + '<h1>Shopping list</h1>'
       + '<div class="chips">' + meals.map(function(m){ return '<span class="chip">' + esc(m.name) + '<button data-act="unpick" data-id="' + esc(m.id) + '" aria-label="Remove ' + esc(m.name) + '">×</button></span>'; }).join('') + '</div>'
@@ -271,7 +282,7 @@ details.how ol{margin:8px 0 0;padding-left:22px}
         }).join('') + '</ul>'
       + '<div class="copybar"><button class="btn primary big" data-act="copy"' + (left ? '' : ' disabled') + '>Copy ' + left + ' item' + (left === 1 ? '' : 's') + ' for Notes</button><p class="status" role="status">' + esc(copyMsg) + '</p>'
       + '<textarea id="copy-fallback" readonly hidden aria-label="Shopping list text"></textarea></div>'
-      + '<details class="how"><summary>Turning it into a checklist in Notes</summary><ol><li>Open your shared grocery note and paste.</li><li>Select the pasted lines.</li><li>Tap the checklist button in the toolbar.</li></ol></details>'
+      + '<details class="how"><summary>Turning it into a checklist in Notes</summary><p>The copied list is grouped by meal, with each meal’s name above its ingredients.</p><ol><li>Open your shared grocery note and paste.</li><li>Select the ingredient lines under a meal name and tap the checklist button. Repeat for each meal.</li><li>Optional: select a meal name and make it a heading from the Aa menu.</li></ol></details>'
       + '<button class="link" data-act="clear">Start a new list</button>'
       + '</main></div>';
   }
