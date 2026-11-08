@@ -1,0 +1,346 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Recipe Box</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style id="css">
+/* Layout: one narrow phone-first column; sticky header with two tabs; a bottom dock appears once meals are picked. */
+:root{
+  --paper:#F6F8F4; --surface:#FFFFFF; --ink:#1C2520; --muted:#5B685F; --line:#DCE3DB;
+  --basil:#2D6A4A; --basil-soft:#E2EEE6; --on-basil:#FFFFFF; --tomato:#B3402C; --tomato-soft:#F8E6E1;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#111613; --surface:#19201C; --ink:#E6ECE7; --muted:#9AA79F; --line:#2B3530;
+  --basil:#7EC49D; --basil-soft:#1E3328; --on-basil:#0E1912; --tomato:#EE8C78; --tomato-soft:#3A201B; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --paper:#111613; --surface:#19201C; --ink:#E6ECE7; --muted:#9AA79F; --line:#2B3530;
+  --basil:#7EC49D; --basil-soft:#1E3328; --on-basil:#0E1912; --tomato:#EE8C78; --tomato-soft:#3A201B; color-scheme:dark }
+
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+*{box-sizing:border-box}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--basil);outline-offset:2px}
+
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:800;font-size:1.35rem;letter-spacing:-.01em}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:700;font-size:.92rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.tabs button[aria-current="page"]{background:var(--basil);color:var(--on-basil)}
+.count{font-variant-numeric:tabular-nums;font-size:.8rem;background:var(--basil-soft);color:var(--basil);border-radius:999px;padding:0 7px;line-height:1.5}
+.tabs button[aria-current="page"] .count{background:var(--on-basil);color:var(--basil)}
+
+main{display:flex;flex-direction:column;gap:16px;padding-block:20px 120px}
+h1{font-family:var(--display);font-weight:800;font-size:1.9rem;line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.015em}
+h2{font-family:var(--display);font-weight:600;font-size:1.05rem;margin:0 0 8px;display:flex;gap:8px;align-items:baseline}
+h2 small{font-family:var(--body);font-weight:400;color:var(--muted);font-size:.85rem}
+.hint{color:var(--muted);margin:0;font-size:.95rem}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--basil);border-color:var(--basil);color:var(--on-basil)}
+.btn.danger{background:var(--tomato);border-color:var(--tomato);color:var(--surface)}
+.btn.big{padding:13px 18px;font-size:1.05rem;width:100%}
+.link{border:0;background:none;padding:4px 0;color:var(--basil);font-weight:700;cursor:pointer;text-align:left}
+.link.danger{color:var(--tomato)}
+
+.toolbar{display:flex;gap:8px}
+.toolbar input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+
+.list{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.list li{display:flex;align-items:stretch;border-top:1px solid var(--line)}
+.list li:first-child{border-top:0}
+.pick{display:flex;align-items:center;padding:0 4px 0 14px;cursor:pointer}
+.pick input,.shop-item input{width:22px;height:22px;accent-color:var(--basil);margin:0;cursor:pointer}
+.rrow{flex:1;min-width:0;border:0;background:none;text-align:left;padding:13px 14px 13px 10px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+.rname{font-weight:700}
+.rmeta{color:var(--muted);font-size:.85rem}
+.tag{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:2px;font-weight:700}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:24px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:10px;align-items:center}
+
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.dock .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px}
+.dock b{font-variant-numeric:tabular-nums}
+
+.detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ing{list-style:none;margin:0;padding:0}
+.ing li{padding:9px 0;border-bottom:1px solid var(--line)}
+.ing li:last-child{border-bottom:0}
+.steps{white-space:pre-wrap;margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.confirm{background:var(--tomato-soft);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.confirm div{display:flex;gap:8px}
+
+form{display:flex;flex-direction:column;gap:16px}
+form label{display:flex;flex-direction:column;gap:6px;font-weight:700}
+form label small{font-weight:400;color:var(--muted)}
+form input,form textarea{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-weight:400;width:100%}
+form textarea{resize:vertical;line-height:1.5}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--basil-soft);color:var(--ink);border-radius:999px;padding:5px 6px 5px 12px;font-weight:700;font-size:.92rem}
+.chip button{border:0;background:none;cursor:pointer;color:var(--muted);font-size:1.1rem;line-height:1;padding:0 4px}
+.shop-item{display:flex;gap:12px;align-items:flex-start;padding:11px 14px;cursor:pointer;width:100%}
+.shop-item input{margin-top:2px;flex:none}
+.shop-item span{display:flex;flex-direction:column;min-width:0}
+.shop-item small{color:var(--muted);font-size:.82rem}
+.shop-item.have .itext{text-decoration:line-through;color:var(--muted)}
+.copybar{display:flex;flex-direction:column;gap:8px}
+.status{color:var(--basil);font-weight:700;min-height:1.5em;text-align:center;margin:0}
+details.how{color:var(--muted);font-size:.95rem}
+details.how summary{cursor:pointer;font-weight:700;color:var(--ink)}
+details.how ol{margin:8px 0 0;padding-left:22px}
+#copy-fallback{width:100%;min-height:120px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px}
+.note{color:var(--muted);font-size:.82rem;margin:0}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<div id="app"></div>
+<script type="application/json" id="data">{"recipes":[{"id":"ex1","example":true,"name":"Chicken tacos","ingredients":["1 lb chicken thighs","Corn tortillas","1 white onion","Cilantro","2 limes","Salsa verde","Cotija cheese"],"steps":"Season chicken with salt, cumin and chili powder.\nSear 5–6 min per side, rest, then slice.\nWarm tortillas, top with chicken, onion, cilantro, cotija and salsa.\nSqueeze lime over everything."},{"id":"ex2","example":true,"name":"Spaghetti bolognese","ingredients":["1 lb ground beef","Spaghetti","1 white onion","2 carrots","Garlic","Crushed tomatoes (28 oz)","Parmesan"],"steps":"Finely chop onion and carrots; soften in olive oil 8 min.\nAdd garlic, then beef; brown well.\nAdd tomatoes and simmer 30 min.\nToss with cooked spaghetti and top with parmesan."},{"id":"ex3","example":true,"name":"Sheet-pan salmon & broccoli","ingredients":["2 salmon fillets","1 head broccoli","2 limes","Garlic","Rice"],"steps":"Heat oven to 425°F.\nToss broccoli with oil and salt; roast 10 min.\nAdd salmon, brush with garlic and lime; roast 12 min more.\nServe over rice."}]}</script>
+<script id="js">
+(function(){
+  var FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">';
+  var LS_DATA = 'recipebox.data', LS_PICK = 'recipebox.picked', LS_HAVE = 'recipebox.have', SS_VIEW = 'recipebox.view';
+  var app = document.getElementById('app');
+
+  function load(k, session){ try{ var v = (session ? sessionStorage : localStorage).getItem(k); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+  function keep(k, v, session){ try{ (session ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); }catch(e){} }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function keyOf(t){ return t.trim().toLowerCase().replace(/\s+/g,' '); }
+  function newId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  var state;
+  try{ state = JSON.parse(document.getElementById('data').textContent); }catch(e){ state = {recipes:[]}; }
+  if(!state || !Array.isArray(state.recipes)) state = {recipes:[]};
+
+  var picked = load(LS_PICK) || [];
+  var have = load(LS_HAVE) || [];
+  var view = load(SS_VIEW, true) || {name:'recipes'};
+  try{ sessionStorage.removeItem(SS_VIEW); }catch(e){}
+  var query = '', confirmDel = false, copyMsg = '', notice = '';
+  var mode = 'pending', artifactApi = null;
+
+  function useLocal(){
+    mode = 'local';
+    var local = load(LS_DATA);
+    if(local && Array.isArray(local.recipes)) state = local;
+  }
+  var artifactReady = Promise.resolve(window.claude && window.claude.use ? window.claude.use('artifact') : null)
+    .catch(function(){ return null; })
+    .then(function(a){ artifactApi = a; if(a) mode = 'shared'; else useLocal(); render(); return a; });
+
+  function byId(id){ return state.recipes.find(function(r){ return r.id === id; }); }
+  function pickedRecipes(){ return state.recipes.filter(function(r){ return picked.indexOf(r.id) > -1; }); }
+  function sorted(){ return state.recipes.slice().sort(function(a,b){ return a.name.localeCompare(b.name); }); }
+
+  function shoppingItems(){
+    var map = new Map();
+    pickedRecipes().forEach(function(r){
+      r.ingredients.forEach(function(line){
+        var t = line.trim(); if(!t) return;
+        var k = keyOf(t);
+        if(!map.has(k)) map.set(k, {text:t, key:k, meals:[]});
+        map.get(k).meals.push(r.name);
+      });
+    });
+    return Array.from(map.values());
+  }
+  function listText(){
+    return shoppingItems().filter(function(i){ return have.indexOf(i.key) < 0; })
+      .map(function(i){ return i.text + (i.meals.length > 1 ? ' (x' + i.meals.length + ')' : ''); }).join('\n');
+  }
+
+  function buildDoc(){
+    var RESET = ':root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}';
+    var json = JSON.stringify(state).replace(/</g, '\\u003c');
+    return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + RESET + '</style></head><body>'
+      + '<title>Recipe Box</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' + FONT_LINK + '\n'
+      + '<style id="css">' + document.getElementById('css').textContent + '</style>\n'
+      + '<div id="app"></div>\n'
+      + '<script type="application/json" id="data">' + json + '<\/script>\n'
+      + '<script id="js">' + document.getElementById('js').textContent + '<\/script>\n'
+      + '</body></html>';
+  }
+
+  function save(){
+    return artifactReady.then(function(){
+      if(mode === 'shared' && artifactApi){
+        keep(SS_VIEW, view, true);
+        return artifactApi.publish(buildDoc()).catch(function(e){
+          if(e && e.code === 'conflict') return; // every open view reloads to the newer version
+          mode = 'local';
+          notice = 'This change could not be saved to the shared recipe box, so it is saved on this device only.';
+          keep(LS_DATA, state); render();
+        });
+      }
+      keep(LS_DATA, state); render();
+    });
+  }
+
+  function go(v){ view = v; confirmDel = false; copyMsg = ''; render(); window.scrollTo(0,0); }
+
+  function header(){
+    var n = picked.length, onList = view.name === 'list';
+    return '<header class="top"><div class="wrap"><div class="brand">Recipe Box</div>'
+      + '<nav class="tabs" aria-label="Sections">'
+      + '<button data-act="tab" data-to="recipes"' + (!onList ? ' aria-current="page"' : '') + '>Recipes</button>'
+      + '<button data-act="tab" data-to="list"' + (onList ? ' aria-current="page"' : '') + '>Shopping list' + (n ? ' <span class="count">' + n + '</span>' : '') + '</button>'
+      + '</nav></div></header>';
+  }
+  function footerNote(){
+    return mode === 'local' ? '<p class="note">' + esc(notice || 'Recipes you add here are saved on this device only.') + '</p>' : '';
+  }
+
+  function recipeRows(){
+    var q = keyOf(query);
+    var rows = sorted().filter(function(r){
+      if(!q) return true;
+      return keyOf(r.name).indexOf(q) > -1 || r.ingredients.some(function(i){ return keyOf(i).indexOf(q) > -1; });
+    });
+    if(!state.recipes.length) return '<div class="empty"><strong>No recipes yet</strong>Add the meals you make most often, with the ingredients you buy for them.<button class="btn primary" data-act="new">Add your first recipe</button></div>';
+    if(!rows.length) return '<div class="empty">No recipes match “' + esc(query) + '”.</div>';
+    return '<ul class="list">' + rows.map(function(r){
+      var on = picked.indexOf(r.id) > -1;
+      return '<li><label class="pick" title="Add to shopping list"><input type="checkbox" id="pick-' + esc(r.id) + '" data-act="pick" data-id="' + esc(r.id) + '"' + (on ? ' checked' : '') + ' aria-label="Add ' + esc(r.name) + ' to shopping list"></label>'
+        + '<button class="rrow" data-act="open" data-id="' + esc(r.id) + '"><span class="rname">' + esc(r.name) + (r.example ? '<span class="tag">Example</span>' : '') + '</span>'
+        + '<span class="rmeta">' + r.ingredients.length + ' ingredient' + (r.ingredients.length === 1 ? '' : 's') + '</span></button></li>';
+    }).join('') + '</ul>';
+  }
+
+  function vRecipes(){
+    var n = picked.length;
+    return header() + '<div class="wrap"><main>'
+      + '<div class="toolbar"><input id="search" type="search" placeholder="Search recipes or ingredients" value="' + esc(query) + '" aria-label="Search recipes"><button class="btn primary" data-act="new">New recipe</button></div>'
+      + (state.recipes.length ? '<p class="hint">Tick the meals you’re cooking this week, then open the shopping list.</p>' : '')
+      + '<div id="rlist">' + recipeRows() + '</div>' + footerNote()
+      + '</main></div>'
+      + (n ? '<div class="dock"><div class="wrap"><span><b>' + n + '</b> meal' + (n === 1 ? '' : 's') + ' picked</span><button class="btn primary" data-act="tab" data-to="list">Make shopping list</button></div></div>' : '');
+  }
+
+  function vRecipe(){
+    var r = byId(view.id); if(!r){ view = {name:'recipes'}; return vRecipes(); }
+    var on = picked.indexOf(r.id) > -1;
+    return header() + '<div class="wrap"><main>'
+      + '<button class="link" data-act="tab" data-to="recipes">← All recipes</button>'
+      + '<h1>' + esc(r.name) + '</h1>'
+      + '<div class="detail-actions"><button class="btn' + (on ? '' : ' primary') + '" data-act="toggle" data-id="' + esc(r.id) + '">' + (on ? 'On the shopping list ✓' : 'Add to shopping list') + '</button><button class="btn" data-act="edit" data-id="' + esc(r.id) + '">Edit</button></div>'
+      + '<section class="card"><h2>Ingredients <small>' + r.ingredients.length + '</small></h2>'
+      + (r.ingredients.length ? '<ul class="ing">' + r.ingredients.map(function(i){ return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>' : '<p class="hint">No ingredients added.</p>') + '</section>'
+      + (r.steps && r.steps.trim() ? '<section class="card"><h2>Steps</h2><p class="steps">' + esc(r.steps.trim()) + '</p></section>' : '')
+      + (confirmDel
+          ? '<div class="confirm"><strong>Delete “' + esc(r.name) + '”?</strong>It will be removed for both of you.<div><button class="btn danger" data-act="del-yes" data-id="' + esc(r.id) + '">Delete recipe</button><button class="btn" data-act="del-no">Keep it</button></div></div>'
+          : '<button class="link danger" data-act="del">Delete recipe</button>')
+      + footerNote() + '</main></div>';
+  }
+
+  function vEdit(){
+    var r = view.id ? byId(view.id) : null;
+    return header() + '<div class="wrap"><main>'
+      + '<button class="link" data-act="cancel">← Cancel</button>'
+      + '<h1>' + (r ? 'Edit recipe' : 'New recipe') + '</h1>'
+      + '<form id="f">'
+      + '<label for="f-name">Recipe name<input id="f-name" required autocomplete="off" value="' + esc(r ? r.name : '') + '" placeholder="e.g. Chicken tacos"></label>'
+      + '<label for="f-ing">Ingredients <small>One per line, written the way you want it on the grocery list.</small><textarea id="f-ing" rows="8" placeholder="1 lb chicken thighs&#10;Corn tortillas&#10;2 limes">' + esc(r ? r.ingredients.join('\n') : '') + '</textarea></label>'
+      + '<label for="f-steps">Steps <small>Optional.</small><textarea id="f-steps" rows="7">' + esc(r ? r.steps || '' : '') + '</textarea></label>'
+      + '<button type="submit" class="btn primary big">Save recipe</button>'
+      + '</form></main></div>';
+  }
+
+  function vList(){
+    var meals = pickedRecipes();
+    if(!meals.length) return header() + '<div class="wrap"><main><h1>Shopping list</h1><div class="empty"><strong>No meals picked yet</strong>Tick 3 or 4 meals on the Recipes tab and their ingredients will show up here.<button class="btn primary" data-act="tab" data-to="recipes">Pick meals</button></div></main></div>';
+    var items = shoppingItems();
+    var left = items.filter(function(i){ return have.indexOf(i.key) < 0; }).length;
+    return header() + '<div class="wrap"><main>'
+      + '<h1>Shopping list</h1>'
+      + '<div class="chips">' + meals.map(function(m){ return '<span class="chip">' + esc(m.name) + '<button data-act="unpick" data-id="' + esc(m.id) + '" aria-label="Remove ' + esc(m.name) + '">×</button></span>'; }).join('') + '</div>'
+      + '<p class="hint">Untick anything you already have at home. It stays off the copied list.</p>'
+      + '<ul class="list">' + items.map(function(i){
+          var got = have.indexOf(i.key) > -1;
+          return '<li><label class="shop-item' + (got ? ' have' : '') + '"><input type="checkbox" id="have-' + esc(i.key.replace(/[^a-z0-9]+/g,'-')) + '" data-act="have" data-key="' + esc(i.key) + '"' + (got ? '' : ' checked') + '>'
+            + '<span><span class="itext">' + esc(i.text) + (i.meals.length > 1 ? ' (x' + i.meals.length + ')' : '') + '</span><small>' + esc(i.meals.join(', ')) + '</small></span></label></li>';
+        }).join('') + '</ul>'
+      + '<div class="copybar"><button class="btn primary big" data-act="copy"' + (left ? '' : ' disabled') + '>Copy ' + left + ' item' + (left === 1 ? '' : 's') + ' for Notes</button><p class="status" role="status">' + esc(copyMsg) + '</p>'
+      + '<textarea id="copy-fallback" readonly hidden aria-label="Shopping list text"></textarea></div>'
+      + '<details class="how"><summary>Turning it into a checklist in Notes</summary><ol><li>Open your shared grocery note and paste.</li><li>Select the pasted lines.</li><li>Tap the checklist button in the toolbar.</li></ol></details>'
+      + '<button class="link" data-act="clear">Start a new list</button>'
+      + '</main></div>';
+  }
+
+  function render(){
+    var html = view.name === 'recipe' ? vRecipe() : view.name === 'edit' ? vEdit() : view.name === 'list' ? vList() : vRecipes();
+    app.innerHTML = html;
+  }
+
+  function setPick(id, on){
+    picked = picked.filter(function(x){ return x !== id; });
+    if(on) picked.push(id);
+    keep(LS_PICK, picked);
+  }
+
+  app.addEventListener('click', function(e){
+    var b = e.target.closest('[data-act]'); if(!b || b.tagName === 'INPUT') return;
+    var act = b.dataset.act, id = b.dataset.id;
+    if(act === 'tab') go({name:b.dataset.to});
+    else if(act === 'open') go({name:'recipe', id:id});
+    else if(act === 'new') go({name:'edit'});
+    else if(act === 'edit') go({name:'edit', id:id});
+    else if(act === 'cancel') go(view.id ? {name:'recipe', id:view.id} : {name:'recipes'});
+    else if(act === 'toggle'){ setPick(id, picked.indexOf(id) < 0); render(); }
+    else if(act === 'unpick'){ setPick(id, false); render(); }
+    else if(act === 'del'){ confirmDel = true; render(); }
+    else if(act === 'del-no'){ confirmDel = false; render(); }
+    else if(act === 'del-yes'){
+      state.recipes = state.recipes.filter(function(r){ return r.id !== id; });
+      setPick(id, false); view = {name:'recipes'}; confirmDel = false; save(); render();
+    }
+    else if(act === 'clear'){ picked = []; have = []; keep(LS_PICK, picked); keep(LS_HAVE, have); go({name:'recipes'}); }
+    else if(act === 'copy'){
+      var text = listText();
+      var done = function(){ copyMsg = 'Copied. Paste it into your grocery note.'; var s = app.querySelector('.status'); if(s) s.textContent = copyMsg; };
+      var fallback = function(){
+        var ta = document.getElementById('copy-fallback');
+        ta.value = text; ta.hidden = false; ta.focus(); ta.select();
+        var ok = false; try{ ok = document.execCommand('copy'); }catch(err){}
+        if(ok) done(); else { var s = app.querySelector('.status'); if(s) s.textContent = 'Press and hold the text below, then choose Copy.'; }
+      };
+      try{ navigator.clipboard.writeText(text).then(done, fallback); }catch(err){ fallback(); }
+    }
+  });
+
+  app.addEventListener('change', function(e){
+    var t = e.target;
+    if(t.dataset.act === 'pick'){ setPick(t.dataset.id, t.checked); render(); var el = document.getElementById(t.id); if(el) el.focus(); }
+    else if(t.dataset.act === 'have'){
+      var k = t.dataset.key;
+      have = have.filter(function(x){ return x !== k; });
+      if(!t.checked) have.push(k);
+      keep(LS_HAVE, have); copyMsg = ''; render();
+      var el2 = document.getElementById(t.id); if(el2) el2.focus();
+    }
+  });
+
+  app.addEventListener('input', function(e){
+    if(e.target.id === 'search'){ query = e.target.value; document.getElementById('rlist').innerHTML = recipeRows(); }
+  });
+
+  app.addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('f-name').value.trim(); if(!name) return;
+    var ingredients = document.getElementById('f-ing').value.split('\n')
+      .map(function(l){ return l.replace(/^\s*[-•*]\s*/, '').trim(); }).filter(Boolean);
+    var steps = document.getElementById('f-steps').value;
+    var r = view.id ? byId(view.id) : null;
+    if(r){ r.name = name; r.ingredients = ingredients; r.steps = steps; delete r.example; }
+    else { r = {id:newId(), name:name, ingredients:ingredients, steps:steps}; state.recipes.push(r); }
+    view = {name:'recipe', id:r.id};
+    save(); render(); window.scrollTo(0,0);
+  });
+
+  render();
+})();
+</script>
+
+</body></html>
